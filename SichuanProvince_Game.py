@@ -173,7 +173,7 @@ def deadLineTimer_onTimeout():
     endSceneTimer.start()
 deadLineTimer.onTimeout = deadLineTimer_onTimeout
 
-endSceneTimer = Timer(1)
+endSceneTimer = Timer(0.5)
 def endSceneTimer_onTimeout():
     endScene.enter()
 endSceneTimer.onTimeout = endSceneTimer_onTimeout
@@ -302,6 +302,22 @@ gameScene = Scene('game', Directory.BACKGROUND.value + 'castle.png')
 ###
 endScene = Scene('end', Directory.BACKGROUND.value + 'castle.png')
 
+restartButton = Object(Directory.BUTTON.value + 'restart_button.png')
+restartButton.locate(endScene, 280, 200)
+restartButton.setScale(0.5)
+restartButton.show()
+def restartButton_onMouseAction(x, y, action):
+    stageScene.enter()
+    curtainTimer.start()
+restartButton.onMouseAction = restartButton_onMouseAction
+
+exitButton = Object(Directory.BUTTON.value + 'exit_button.png')
+exitButton.locate(endScene, 763, 200)
+exitButton.setScale(0.5)
+exitButton.show()
+def exitButton_onMouseAction(x, y, action):
+    endGame()
+exitButton.onMouseAction = exitButton_onMouseAction
 
 # start Game
 startGame(startScene)
