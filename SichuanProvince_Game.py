@@ -24,35 +24,35 @@ CharacterNum = 20
 CharacterList = list(range(1, CharacterNum + 1))
 CorrectNum = 0
 
-class Difficulty(Enum):
+class Stage(Enum):
     EASY = 0,
     NORMAL = 1,
     HARD = 2
 NowStage = None
 
 CardRow = {
-    Difficulty.EASY : 4,
-    Difficulty.NORMAL : 6,
-    Difficulty.HARD : 10}
+    Stage.EASY : 4,
+    Stage.NORMAL : 6,
+    Stage.HARD : 10}
 CardCol = {
-    Difficulty.EASY : 3,
-    Difficulty.NORMAL : 4,
-    Difficulty.HARD : 4}
+    Stage.EASY : 3,
+    Stage.NORMAL : 4,
+    Stage.HARD : 4}
 Cards = []
 
 startRowPx = {
-    Difficulty.EASY : 412,
-    Difficulty.NORMAL : 298,
-    Difficulty.HARD : 70}
+    Stage.EASY : 412,
+    Stage.NORMAL : 298,
+    Stage.HARD : 70}
 startColPx = {
-    Difficulty.EASY : 134,
-    Difficulty.NORMAL : 59,
-    Difficulty.HARD : 59}
+    Stage.EASY : 134,
+    Stage.NORMAL : 59,
+    Stage.HARD : 59}
 
 deadLineTime = {
-    Difficulty.EASY : 30,
-    Difficulty.NORMAL : 30,
-    Difficulty.HARD : 60}
+    Stage.EASY : 30,
+    Stage.NORMAL : 30,
+    Stage.HARD : 60}
 
 class State(Enum):
     NOCLICK = 0
@@ -66,11 +66,11 @@ SecondClickedRow = None
 SecondClickedCol = None
 
 # Class
-Stages = []
-class Stage(Object):
+StageButtons = []
+class StageButton(Object):
     def __init__(self, file, s):
         super().__init__(file)
-        self.difficulty = s
+        self.stage = s
 
     def onMouseAction(self, x, y, action):
         global NowStage
@@ -78,9 +78,9 @@ class Stage(Object):
 
         gameScene.enter()
 
-        NowStage = self.difficulty
+        NowStage = self.stage
     
-        deadLineTimer.set(deadLineTime[self.difficulty])
+        deadLineTimer.set(deadLineTime[self.stage])
         createCards()
         answerShowTimer.start()
         showTimer(answerShowTimer)
@@ -205,13 +205,13 @@ curtain = Object(Directory.BACKGROUND.value + 'curtain.png')
 curtain.locate(stageScene, 0, 0)
 curtain.show()
 
-Stages.append(Stage(Directory.BUTTON.value + 'easy_button.png', Difficulty.EASY))
-Stages.append(Stage(Directory.BUTTON.value + 'normal_button.png', Difficulty.NORMAL))
-Stages.append(Stage(Directory.BUTTON.value + 'hard_button.png', Difficulty.HARD))
-for i in range(len(Stages)):
-    Stages[i].locate(stageScene, 211 + 300*i, 120)
-    Stages[i].setScale(0.5)
-    Stages[i].show()
+StageButtons.append(StageButton(Directory.BUTTON.value + 'easy_button.png', Stage.EASY))
+StageButtons.append(StageButton(Directory.BUTTON.value + 'normal_button.png', Stage.NORMAL))
+StageButtons.append(StageButton(Directory.BUTTON.value + 'hard_button.png', Stage.HARD))
+for i in range(len(StageButtons)):
+    StageButtons[i].locate(stageScene, 211 + 300*i, 120)
+    StageButtons[i].setScale(0.5)
+    StageButtons[i].show()
 
 def createCards():
     global Cards
