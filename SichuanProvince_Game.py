@@ -189,11 +189,13 @@ def initClickedVars():
     global FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol
     FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol = None, None, None, None
 
-startButton = Object(Directory.BUTTON.value + 'start.png')
-startButton.locate(startScene, 600, 60)
+startButton = Object(Directory.BUTTON.value + 'start_button.png')
+startButton.locate(startScene, 526, 120)
+startButton.setScale(0.5)
 startButton.show()
 def startButton_onMouseAction(x, y, action):
     stageScene.enter()
+    curtainTimer.start()
 startButton.onMouseAction = startButton_onMouseAction
 
 
@@ -201,9 +203,40 @@ startButton.onMouseAction = startButton_onMouseAction
 ### Stage Scene
 ###
 stageScene = Scene('stage', Directory.BACKGROUND.value + 'castle.png')
-curtain = Object(Directory.BACKGROUND.value + 'curtain.png')
-curtain.locate(stageScene, 0, 0)
-curtain.show()
+
+curtainLeft = Object(Directory.BACKGROUND.value + 'curtain_left.png')
+curtainLeft.x = -267
+curtainLeft.locate(stageScene, curtainLeft.x, 0)
+curtainLeft.show()
+
+curtainRight = Object(Directory.BACKGROUND.value + 'curtain_right.png')
+curtainRight.x = 1280
+curtainRight.locate(stageScene, curtainRight.x, 0)
+curtainRight.show()
+
+curtainTop = Object(Directory.BACKGROUND.value + 'curtain_top.png')
+curtainTop.y = 720
+curtainTop.locate(stageScene, 0, curtainTop.y)
+curtainTop.show()
+
+curtainTimer = Timer(0.01)
+def curtainTimer_onTimeout():
+    curtainLeft.x += 10
+    curtainLeft.locate(stageScene, curtainLeft.x, 0)
+    curtainRight.x -= 10
+    curtainRight.locate(stageScene, curtainRight.x, 0)
+    curtainTop.y -= 5
+    curtainTop.locate(stageScene, 0, curtainTop.y)
+
+    if curtainLeft.x < 0:
+        curtainTimer.set(0.01)
+        curtainTimer.start()
+    else:
+        curtainLeft.locate(stageScene, 0, 0)
+        curtainRight.locate(stageScene, 1280 - 292, 0)
+        curtainTop.locate(stageScene, 0, 720 - 133)
+        curtainTimer.stop()
+curtainTimer.onTimeout = curtainTimer_onTimeout
 
 StageButtons.append(StageButton(Directory.BUTTON.value + 'easy_button.png', Stage.EASY))
 StageButtons.append(StageButton(Directory.BUTTON.value + 'normal_button.png', Stage.NORMAL))
