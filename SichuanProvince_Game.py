@@ -12,12 +12,17 @@ setGameOption(GameOption.MESSAGE_BOX_BUTTON, False)
 ###
 
 # directories
-CardBackImage = 'card.png'
 class Directory(Enum):
+    CARD = 'card/'
     BACKGROUND = 'background/'
     CHARACTER = 'characters/'
     BUTTON = 'button/'
+    ITEM = 'item/'
+CardBackImage = Directory.CARD.value + 'card.png'
 
+# item variables
+HasHint = False
+SuccessiveWrongCount = 0
 
 # variables
 CharacterNum = 20
@@ -25,8 +30,8 @@ CharacterList = list(range(1, CharacterNum + 1))
 CorrectNum = 0
 
 class Stage(Enum):
-    EASY = 0,
-    NORMAL = 1,
+    EASY = 0
+    NORMAL = 1
     HARD = 2
 NowStage = None
 
@@ -58,6 +63,7 @@ class State(Enum):
     NOCLICK = 0
     ONECLICK = 1
     TWOCLICK = 2
+    CANNOTCLICK = 3
 NowState = State.NOCLICK
 
 FirstClickedRow = None
@@ -77,11 +83,12 @@ class StageButton(Object):
         initClickedVars()
 
         gameScene.enter()
-
+        
         NowStage = self.stage
     
         deadLineTimer.set(deadLineTime[self.stage])
         createCards()
+        answerShowTimer.set(AnswerShowTime)
         answerShowTimer.start()
         showTimer(answerShowTimer)
 
@@ -92,6 +99,7 @@ class Card(Object):
         self.image = file
         self.row = row
         self.col = col
+        self.isHide = False
 
     def locate(self, scene, x, y):
         super().locate(scene, x, y)
@@ -99,6 +107,9 @@ class Card(Object):
     def onMouseAction(self, x, y, action):
         global Cards, NowState, FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol
         
+        if NowStage == State.CANNOTCLICK:
+            return
+
         if (NowState == State.ONECLICK) and (FirstClickedRow == self.row) and (FirstClickedCol == self.col): # double Click Error
             print('wrong double click')
             return
@@ -118,13 +129,15 @@ class Card(Object):
 
             if Cards[FirstClickedRow][FirstClickedCol].image == self.image:   # if it is answer
                 print('answer')
-                rightTimer.set(1)
+                rightTimer.set(0.5)
                 rightTimer.start()
             else:   # if it is wrong
                 print('wrong')
-                wrongTimer.set(1)
+                wrongTimer.set(0.5)
                 wrongTimer.start()
-
+    def hide(self):
+        super().hide()
+        self.isHide = True
 
 # Timers
 AnswerShowTime = 2
@@ -142,8 +155,9 @@ answerShowTimer.onTimeout = answerShowTimer_onTimeout
 
 rightTimer = Timer(0.5)
 def rightTimer_onTimeOut():
-    global Cards, NowState, CorrectNum
+    global Cards, NowState, CorrectNum, SuccessiveWrongCount
 
+    SuccessiveWrongCount = 0
     NowState = State.NOCLICK
     Cards[FirstClickedRow][FirstClickedCol].hide()
     Cards[SecondClickedRow][SecondClickedCol].hide()
@@ -151,6 +165,11 @@ def rightTimer_onTimeOut():
 
     CorrectNum += 2
     if CorrectNum == CardRow[NowStage] * CardCol[NowStage]: # Game end
+
+        ###
+        ### TODO
+        ###
+
         showMessage('ㅊㅊ')
         hideTimer()
         endSceneTimer.start()
@@ -158,7 +177,11 @@ rightTimer.onTimeout = rightTimer_onTimeOut
 
 wrongTimer = Timer(0.5)
 def wrongTimer_onTimeout():
-    global Cards, NowState
+    global Cards, NowState, SuccessiveWrongCount
+    
+    SuccessiveWrongCount += 1
+    if SuccessiveWrongCount == 5:
+        item_eye.show()
 
     NowState = State.NOCLICK
     Cards[FirstClickedRow][FirstClickedCol].setImage(CardBackImage)
@@ -169,6 +192,11 @@ wrongTimer.onTimeout = wrongTimer_onTimeout
 deadLineTimer = Timer(60)
 def deadLineTimer_onTimeout():
     hideTimer()
+
+    ###
+    ### TODO
+    ###
+
     showMessage('ㅉㅉ')
     endSceneTimer.start()
 deadLineTimer.onTimeout = deadLineTimer_onTimeout
@@ -247,7 +275,8 @@ for i in range(len(StageButtons)):
     StageButtons[i].show()
 
 def createCards():
-    global Cards
+    global Cards, SuccessiveWrongCount
+    SuccessiveWrongCount = 0
 
     # select Characters
     characterNum = int(CardRow[NowStage] * CardCol[NowStage] / 2)
@@ -290,11 +319,38 @@ def createCards():
             Cards[map[i][j][0]][map[i][j][1]].show()
             characterIdx += 1
 
-
 ###
 ### Game Scene
 ###
 gameScene = Scene('game', Directory.BACKGROUND.value + 'castle.png')
+
+item_eye = Object(Directory.ITEM.value + 'eye.png')
+item_eye.locate(gameScene, 5, 600)
+item_eye.setScale(0.8)
+
+def item_eye_onMouseAction(x, y, action):
+    global SuccessiveWrongCount, NowState
+    SuccessiveWrongCount = 0
+    NowState = State.CANNOTCLICK
+
+    item_eye.hide()
+    for i in range(CardRow[NowStage]):
+        for j in range(CardCol[NowStage]):
+            if not Cards[i][j].isHide:
+                Cards[i][j].setImage(Cards[i][j].image)
+    item_eye_timer.set(2)
+    item_eye_timer.start()
+item_eye.onMouseAction = item_eye_onMouseAction
+
+item_eye_timer = Timer(2)
+def item_eye_timer_onTimeout():
+    global NowState
+    NowState = State.NOCLICK
+    for i in range(CardRow[NowStage]):
+        for j in range(CardCol[NowStage]):
+            if not Cards[i][j].isHide:
+                Cards[i][j].setImage(Directory.CARD.value + 'card.png')
+item_eye_timer.onTimeout = item_eye_timer_onTimeout
 
 
 ###
