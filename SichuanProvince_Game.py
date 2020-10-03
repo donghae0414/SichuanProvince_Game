@@ -1,6 +1,8 @@
 from bangtal import *
 import random
 from enum import Enum
+import time
+import sys
 
 # Game Options
 setGameOption(GameOption.INVENTORY_BUTTON, False)
@@ -22,7 +24,12 @@ CardBackImage = Directory.CARD.value + 'card.png'
 
 # item variables
 HasHint = False
+
+SuccessiveWrongNum = 4
 SuccessiveWrongCount = 0
+
+SuccessiveRightNum = 2
+SuccessiveRightCount = 0
 
 # variables
 CharacterNum = 20
@@ -56,8 +63,18 @@ startColPx = {
 
 deadLineTime = {
     Stage.EASY : 30,
-    Stage.NORMAL : 30,
+    Stage.NORMAL : 60,
     Stage.HARD : 60}
+
+# Records
+RecordFile = 'record.txt'
+record = [sys.maxsize, sys.maxsize, sys.maxsize]
+f = open(RecordFile, 'r')
+for i in range(3):
+    line = f.readline()
+    record[i] = float(line)
+f.close()
+StartTime = None
 
 class State(Enum):
     NOCLICK = 0
@@ -79,13 +96,18 @@ class StageButton(Object):
         self.stage = s
 
     def onMouseAction(self, x, y, action):
-        global NowStage
+        global NowStage, NowState, SuccessiveWrongCount, SuccessiveRightCount, CorrectNum, StartTime
+        SuccessiveWrongCount = 0
+        SuccessiveRightCount = 0
+        CorrectNum = 0
         initClickedVars()
+        StartTime = time.time()
+
+        NowStage = self.stage
+        NowState = State.NOCLICK
 
         gameScene.enter()
-        
-        NowStage = self.stage
-    
+
         deadLineTimer.set(deadLineTime[self.stage])
         createCards()
         answerShowTimer.set(AnswerShowTime)
@@ -155,9 +177,14 @@ answerShowTimer.onTimeout = answerShowTimer_onTimeout
 
 rightTimer = Timer(0.5)
 def rightTimer_onTimeOut():
-    global Cards, NowState, CorrectNum, SuccessiveWrongCount
+    global Cards, NowState, CorrectNum, SuccessiveWrongCount, SuccessiveRightCount, StartTime
 
+    SuccessiveRightCount += 1
     SuccessiveWrongCount = 0
+    if SuccessiveRightCount == SuccessiveRightNum:
+        SuccessiveRightCount = 0
+        deadLineTimer.increase(3)
+
     NowState = State.NOCLICK
     Cards[FirstClickedRow][FirstClickedCol].hide()
     Cards[SecondClickedRow][SecondClickedCol].hide()
@@ -167,20 +194,54 @@ def rightTimer_onTimeOut():
     if CorrectNum == CardRow[NowStage] * CardCol[NowStage]: # Game end
 
         ###
-        ### TODO
+        ### 성공 시
         ###
-
-        showMessage('ㅊㅊ')
+        completeTime = format(time.time() - StartTime, ".2f")
+        compare_record(float(completeTime))
+        
+        deadLineTimer.stop()
         hideTimer()
         endSceneTimer.start()
 rightTimer.onTimeout = rightTimer_onTimeOut
 
+def compare_record(completeTime):
+    global record
+    msg = ""
+    if NowStage == Stage.EASY:
+        if record[0] > completeTime:
+            record[0] = completeTime
+            msg = 'Easy 기록 갱신! ' + str(float(completeTime)) + ' 초!'
+        else:
+            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(record[0]) + ' 초'
+    elif NowStage == Stage.NORMAL:
+        if record[1] > completeTime:
+            record[1] = completeTime
+            msg = 'Normal 기록 갱신! ' + str(float(completeTime)) + ' 초!'
+        else:
+            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(record[0]) + ' 초'
+    elif NowStage == Stage.HARD:
+        if record[2] > completeTime:
+            record[2] = completeTime
+            msg = 'Hard 기록 갱신! ' + str(float(completeTime)) + ' 초!'
+        else:
+            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(record[0]) + ' 초'
+    else:
+        print('compare_record stage error')
+
+    f = open(RecordFile, 'w')
+    for i in range(3):
+        f.write(str(record[i]) + "\n")
+    f.close
+
+    showMessage(msg)
+
 wrongTimer = Timer(0.5)
 def wrongTimer_onTimeout():
-    global Cards, NowState, SuccessiveWrongCount
+    global Cards, NowState, SuccessiveWrongCount, SuccessiveRightCount
     
+    SuccessiveRightCount = 0
     SuccessiveWrongCount += 1
-    if SuccessiveWrongCount == 5:
+    if SuccessiveWrongCount == SuccessiveWrongNum:
         item_eye.show()
 
     NowState = State.NOCLICK
@@ -194,10 +255,10 @@ def deadLineTimer_onTimeout():
     hideTimer()
 
     ###
-    ### TODO
+    ### 실패 시
     ###
 
-    showMessage('ㅉㅉ')
+    showMessage('실패!')
     endSceneTimer.start()
 deadLineTimer.onTimeout = deadLineTimer_onTimeout
 
@@ -275,8 +336,7 @@ for i in range(len(StageButtons)):
     StageButtons[i].show()
 
 def createCards():
-    global Cards, SuccessiveWrongCount
-    SuccessiveWrongCount = 0
+    global Cards
 
     # select Characters
     characterNum = int(CardRow[NowStage] * CardCol[NowStage] / 2)
@@ -357,6 +417,16 @@ item_eye_timer.onTimeout = item_eye_timer_onTimeout
 ### end Scene
 ###
 endScene = Scene('end', Directory.BACKGROUND.value + 'castle.png')
+def endScene_onEnter():
+    global Cards, StartTime
+
+    for i in range(CardRow[NowStage]):
+        for j in range(CardCol[NowStage]):
+            Cards[i][j].hide()
+    
+
+endScene.onEnter = endScene_onEnter
+
 
 restartButton = Object(Directory.BUTTON.value + 'restart_button.png')
 restartButton.locate(endScene, 280, 200)
