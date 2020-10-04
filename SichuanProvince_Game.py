@@ -1,122 +1,48 @@
 from bangtal import *
+import config
+
 import random
-from enum import Enum
 import time
-import sys
 
 # Game Options
 setGameOption(GameOption.INVENTORY_BUTTON, False)
 setGameOption(GameOption.MESSAGE_BOX_BUTTON, False)
 
-
-###
-### Global Variables
-###
-
-# directories
-class Directory(Enum):
-    CARD = 'card/'
-    BACKGROUND = 'background/'
-    CHARACTER = 'characters/'
-    BUTTON = 'button/'
-    ITEM = 'item/'
-CardBackImage = Directory.CARD.value + 'card.png'
-
-# item variables
-HasHint = False
-
-SuccessiveWrongNum = 4
-SuccessiveWrongCount = 0
-
-SuccessiveRightNum = 2
-SuccessiveRightCount = 0
-
-# variables
-CharacterNum = 20
-CharacterList = list(range(1, CharacterNum + 1))
-CorrectNum = 0
-
-class Stage(Enum):
-    EASY = 0
-    NORMAL = 1
-    HARD = 2
-NowStage = None
-
-CardRow = {
-    Stage.EASY : 4,
-    Stage.NORMAL : 6,
-    Stage.HARD : 10}
-CardCol = {
-    Stage.EASY : 3,
-    Stage.NORMAL : 4,
-    Stage.HARD : 4}
-Cards = []
-
-startRowPx = {
-    Stage.EASY : 412,
-    Stage.NORMAL : 298,
-    Stage.HARD : 70}
-startColPx = {
-    Stage.EASY : 134,
-    Stage.NORMAL : 59,
-    Stage.HARD : 59}
-
-deadLineTime = {
-    Stage.EASY : 30,
-    Stage.NORMAL : 60,
-    Stage.HARD : 60}
-
-# Records
-RecordFile = 'record.txt'
-record = [sys.maxsize, sys.maxsize, sys.maxsize]
-f = open(RecordFile, 'r')
+# Load Record Files
+f = open(config.RecordFile, 'r')
 for i in range(3):
     line = f.readline()
-    record[i] = float(line)
+    config.record[i] = float(line)
 f.close()
-StartTime = None
 
-class State(Enum):
-    NOCLICK = 0
-    ONECLICK = 1
-    TWOCLICK = 2
-    CANNOTCLICK = 3
-NowState = State.NOCLICK
-
-FirstClickedRow = None
-FirstClickedCol = None
-SecondClickedRow = None
-SecondClickedCol = None
 
 # Class
-StageButtons = []
 class StageButton(Object):
     def __init__(self, file, s):
         super().__init__(file)
         self.stage = s
 
     def onMouseAction(self, x, y, action):
-        global NowStage, NowState, SuccessiveWrongCount, SuccessiveRightCount, CorrectNum, StartTime
-        SuccessiveWrongCount = 0
-        SuccessiveRightCount = 0
-        CorrectNum = 0
+        #global config.NowStage, config.NowState, config.SuccessiveWrongCount, config.SuccessiveRightCount, config.CorrectNum, config.StartTime
+        config.SuccessiveWrongCount = 0
+        config.SuccessiveRightCount = 0
+        config.CorrectNum = 0
         initClickedVars()
-        StartTime = time.time()
+        config.StartTime = time.time()
 
-        NowStage = self.stage
-        NowState = State.NOCLICK
-
+        config.NowStage = self.stage
+        config.NowState = config.State.NOCLICK
+        
         gameScene.enter()
 
-        deadLineTimer.set(deadLineTime[self.stage])
+        deadLineTimer.set(config.deadLineTime[self.stage])
         createCards()
-        answerShowTimer.set(AnswerShowTime)
+        answerShowTimer.set(config.AnswerShowTime)
         answerShowTimer.start()
         showTimer(answerShowTimer)
 
 class Card(Object):
     def __init__(self, file, row, col):
-        global CardImage
         super().__init__(file)
         self.image = file
         self.row = row
@@ -129,27 +55,27 @@ class Card(Object):
     def onMouseAction(self, x, y, action):
         global Cards, NowState, FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol
         
-        if NowStage == State.CANNOTCLICK:
+        if config.NowStage == config.State.CANNOTCLICK:
             return
 
-        if (NowState == State.ONECLICK) and (FirstClickedRow == self.row) and (FirstClickedCol == self.col): # double Click Error
+        if (config.NowState == config.State.ONECLICK) and (config.FirstClickedRow == self.row) and (config.FirstClickedCol == self.col): # double Click Error
             print('wrong double click')
             return
 
-        if NowState != State.TWOCLICK:
+        if config.NowState != config.State.TWOCLICK:
             self.setImage(self.image)
 
-        if NowState == State.NOCLICK:
-            NowState = State.ONECLICK
-            FirstClickedRow = self.row
-            FirstClickedCol = self.col
+        if config.NowState == config.State.NOCLICK:
+            config.NowState = config.State.ONECLICK
+            config.FirstClickedRow = self.row
+            config.FirstClickedCol = self.col
 
-        elif NowState == State.ONECLICK:
-            NowState = State.TWOCLICK
-            SecondClickedRow = self.row
-            SecondClickedCol = self.col
-
-            if Cards[FirstClickedRow][FirstClickedCol].image == self.image:   # if it is answer
+        elif config.NowState == config.State.ONECLICK:
+            config.NowState = config.State.TWOCLICK
+            config.SecondClickedRow = self.row
+            config.SecondClickedCol = self.col
+            
+            if config.Cards[config.FirstClickedRow][config.FirstClickedCol].image == self.image:   # if it is answer
                 print('answer')
                 rightTimer.set(0.5)
                 rightTimer.start()
@@ -161,14 +87,15 @@ class Card(Object):
         super().hide()
         self.isHide = True
 
+
+
 # Timers
-AnswerShowTime = 2
-answerShowTimer = Timer(AnswerShowTime)
+answerShowTimer = Timer(config.AnswerShowTime)
 def answerShowTimer_onTimeout():
-    global Cards
-    for i in range(CardRow[NowStage]):
-        for j in range(CardCol[NowStage]):
-            Cards[i][j].setImage(CardBackImage)
+    #global Cards
+    for i in range(config.CardRow[config.NowStage]):
+        for j in range(config.CardCol[config.NowStage]):
+            config.Cards[i][j].setImage(config.CardBackImage)
     hideTimer()
     
     deadLineTimer.start()
@@ -177,26 +104,26 @@ answerShowTimer.onTimeout = answerShowTimer_onTimeout
 
 rightTimer = Timer(0.5)
 def rightTimer_onTimeOut():
-    global Cards, NowState, CorrectNum, SuccessiveWrongCount, SuccessiveRightCount, StartTime
+    #global Cards, NowState, CorrectNum, SuccessiveWrongCount, SuccessiveRightCount, StartTime
 
-    SuccessiveRightCount += 1
-    SuccessiveWrongCount = 0
-    if SuccessiveRightCount == SuccessiveRightNum:
-        SuccessiveRightCount = 0
+    config.SuccessiveRightCount += 1
+    config.SuccessiveWrongCount = 0
+    if config.SuccessiveRightCount == config.SuccessiveRightNum:
+        config.SuccessiveRightCount = 0
         deadLineTimer.increase(3)
 
-    NowState = State.NOCLICK
-    Cards[FirstClickedRow][FirstClickedCol].hide()
-    Cards[SecondClickedRow][SecondClickedCol].hide()
+    config.NowState = config.State.NOCLICK
+    config.Cards[config.FirstClickedRow][config.FirstClickedCol].hide()
+    config.Cards[config.SecondClickedRow][config.SecondClickedCol].hide()
     initClickedVars()
-
-    CorrectNum += 2
-    if CorrectNum == CardRow[NowStage] * CardCol[NowStage]: # Game end
+    
+    config.CorrectNum += 2
+    if config.CorrectNum == config.CardRow[config.NowStage] * config.CardCol[config.NowStage]: # Game end
 
         ###
         ### 성공 시
         ###
-        completeTime = format(time.time() - StartTime, ".2f")
+        completeTime = format(time.time() - config.StartTime, ".2f")
         compare_record(float(completeTime))
         
         deadLineTimer.stop()
@@ -205,48 +132,48 @@ def rightTimer_onTimeOut():
 rightTimer.onTimeout = rightTimer_onTimeOut
 
 def compare_record(completeTime):
-    global record
+    #global record
     msg = ""
-    if NowStage == Stage.EASY:
-        if record[0] > completeTime:
-            record[0] = completeTime
+    if config.NowStage == config.Stage.EASY:
+        if config.record[0] > completeTime:
+            config.record[0] = completeTime
             msg = 'Easy 기록 갱신! ' + str(float(completeTime)) + ' 초!'
         else:
-            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(record[0]) + ' 초'
-    elif NowStage == Stage.NORMAL:
-        if record[1] > completeTime:
-            record[1] = completeTime
+            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(config.record[0]) + ' 초'
+    elif config.NowStage == config.Stage.NORMAL:
+        if config.record[1] > completeTime:
+            config.record[1] = completeTime
             msg = 'Normal 기록 갱신! ' + str(float(completeTime)) + ' 초!'
         else:
-            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(record[0]) + ' 초'
-    elif NowStage == Stage.HARD:
-        if record[2] > completeTime:
-            record[2] = completeTime
+            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Normal 최고 기록 : ' + str(config.record[1]) + ' 초'
+    elif config.NowStage == config.Stage.HARD:
+        if config.record[2] > completeTime:
+            config.record[2] = completeTime
             msg = 'Hard 기록 갱신! ' + str(float(completeTime)) + ' 초!'
         else:
-            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Easy 최고 기록 : ' + str(record[0]) + ' 초'
+            msg = '이번 기록 : ' + str(float(completeTime)) + ' 초!\n' + 'Hard 최고 기록 : ' + str(config.record[2]) + ' 초'
     else:
         print('compare_record stage error')
 
-    f = open(RecordFile, 'w')
+    f = open(config.RecordFile, 'w')
     for i in range(3):
-        f.write(str(record[i]) + "\n")
+        f.write(str(config.record[i]) + "\n")
     f.close
 
     showMessage(msg)
 
 wrongTimer = Timer(0.5)
 def wrongTimer_onTimeout():
-    global Cards, NowState, SuccessiveWrongCount, SuccessiveRightCount
+    #global Cards, NowState, SuccessiveWrongCount, SuccessiveRightCount
     
-    SuccessiveRightCount = 0
-    SuccessiveWrongCount += 1
-    if SuccessiveWrongCount == SuccessiveWrongNum:
+    config.SuccessiveRightCount = 0
+    config.SuccessiveWrongCount += 1
+    if config.SuccessiveWrongCount == config.SuccessiveWrongNum:
         item_eye.show()
 
-    NowState = State.NOCLICK
-    Cards[FirstClickedRow][FirstClickedCol].setImage(CardBackImage)
-    Cards[SecondClickedRow][SecondClickedCol].setImage(CardBackImage)
+    config.NowState = config.State.NOCLICK
+    config.Cards[config.FirstClickedRow][config.FirstClickedCol].setImage(config.CardBackImage)
+    config.Cards[config.SecondClickedRow][config.SecondClickedCol].setImage(config.CardBackImage)
     initClickedVars()
 wrongTimer.onTimeout = wrongTimer_onTimeout
 
@@ -272,13 +199,13 @@ endSceneTimer.onTimeout = endSceneTimer_onTimeout
 ###
 ### Start Scene
 ###
-startScene = Scene('main', Directory.BACKGROUND.value + 'castle.png')
+startScene = Scene('main', config.Directory.BACKGROUND.value + 'castle.png')
 
 def initClickedVars():
-    global FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol
-    FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol = None, None, None, None
+    #global FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol
+    config.FirstClickedRow, config.FirstClickedCol, config.SecondClickedRow, config.SecondClickedCol = None, None, None, None
 
-startButton = Object(Directory.BUTTON.value + 'start_button.png')
+startButton = Object(config.Directory.BUTTON.value + 'start_button.png')
 startButton.locate(startScene, 526, 120)
 startButton.setScale(0.5)
 startButton.show()
@@ -291,19 +218,19 @@ startButton.onMouseAction = startButton_onMouseAction
 ###
 ### Stage Scene
 ###
-stageScene = Scene('stage', Directory.BACKGROUND.value + 'castle.png')
+stageScene = Scene('stage', config.Directory.BACKGROUND.value + 'castle.png')
 
-curtainLeft = Object(Directory.BACKGROUND.value + 'curtain_left.png')
+curtainLeft = Object(config.Directory.BACKGROUND.value + 'curtain_left.png')
 curtainLeft.x = -267
 curtainLeft.locate(stageScene, curtainLeft.x, 0)
 curtainLeft.show()
 
-curtainRight = Object(Directory.BACKGROUND.value + 'curtain_right.png')
+curtainRight = Object(config.Directory.BACKGROUND.value + 'curtain_right.png')
 curtainRight.x = 1280
 curtainRight.locate(stageScene, curtainRight.x, 0)
 curtainRight.show()
 
-curtainTop = Object(Directory.BACKGROUND.value + 'curtain_top.png')
+curtainTop = Object(config.Directory.BACKGROUND.value + 'curtain_top.png')
 curtainTop.y = 720
 curtainTop.locate(stageScene, 0, curtainTop.y)
 curtainTop.show()
@@ -327,108 +254,106 @@ def curtainTimer_onTimeout():
         curtainTimer.stop()
 curtainTimer.onTimeout = curtainTimer_onTimeout
 
-StageButtons.append(StageButton(Directory.BUTTON.value + 'easy_button.png', Stage.EASY))
-StageButtons.append(StageButton(Directory.BUTTON.value + 'normal_button.png', Stage.NORMAL))
-StageButtons.append(StageButton(Directory.BUTTON.value + 'hard_button.png', Stage.HARD))
-for i in range(len(StageButtons)):
-    StageButtons[i].locate(stageScene, 211 + 300*i, 120)
-    StageButtons[i].setScale(0.5)
-    StageButtons[i].show()
+config.StageButtons.append(StageButton(config.Directory.BUTTON.value + 'easy_button.png', config.Stage.EASY))
+config.StageButtons.append(StageButton(config.Directory.BUTTON.value + 'normal_button.png', config.Stage.NORMAL))
+config.StageButtons.append(StageButton(config.Directory.BUTTON.value + 'hard_button.png', config.Stage.HARD))
+for i in range(len(config.StageButtons)):
+    config.StageButtons[i].locate(stageScene, 211 + 300*i, 120)
+    config.StageButtons[i].setScale(0.5)
+    config.StageButtons[i].show()
 
 def createCards():
-    global Cards
+    #global Cards
 
     # select Characters
-    characterNum = int(CardRow[NowStage] * CardCol[NowStage] / 2)
-    random.shuffle(CharacterList)
-    CharacterArr = CharacterList[:characterNum]
+    characterNum = int(config.CardRow[config.NowStage] * config.CardCol[config.NowStage] / 2)
+    random.shuffle(config.CharacterList)
+    CharacterArr = config.CharacterList[:characterNum]
     CharacterArr += CharacterArr
     random.shuffle(CharacterArr)
     print('Selected Characters :', CharacterArr)
 
     # shuffle map
-    Cards = []
+    config.Cards = []
 
     map = []
-    for i in range(CardRow[NowStage]):
+    for i in range(config.CardRow[config.NowStage]):
         arr = []
         row = []
-        for j in range(CardCol[NowStage]):
+        for j in range(config.CardCol[config.NowStage]):
             arr.append((i, j))
             row.append(None)
         random.shuffle(arr)
         map.append(arr)
-        Cards.append(row)
+        config.Cards.append(row)
     random.shuffle(map)
     print('map :', map)
     
     # make Card Objects
     characterIdx = 0
-
     scale = 0.3
-    for i in range(CardRow[NowStage]):
-        for j in range(CardCol[NowStage]):
+    for i in range(config.CardRow[config.NowStage]):
+        for j in range(config.CardCol[config.NowStage]):
             filename = int(CharacterArr[characterIdx])
             if filename < 10:
                 filename = '0' + str(filename) + '.png'
             else:
                 filename = str(filename) + '.png'
-            Cards[map[i][j][0]][map[i][j][1]] = Card(Directory.CHARACTER.value + filename, map[i][j][0], map[i][j][1])
-            Cards[map[i][j][0]][map[i][j][1]].locate(gameScene, startRowPx[NowStage] + i*int(380*scale) + 5, startColPx[NowStage] + j*int(502*scale) + 5)
-            Cards[map[i][j][0]][map[i][j][1]].setScale(scale)
-            Cards[map[i][j][0]][map[i][j][1]].show()
+            config.Cards[map[i][j][0]][map[i][j][1]] = Card(config.Directory.CHARACTER.value + filename, map[i][j][0], map[i][j][1])
+            config.Cards[map[i][j][0]][map[i][j][1]].locate(gameScene, config.startRowPx[config.NowStage] + i*int(380*scale) + 5, config.startColPx[config.NowStage] + j*int(502*scale) + 5)
+            config.Cards[map[i][j][0]][map[i][j][1]].setScale(scale)
+            config.Cards[map[i][j][0]][map[i][j][1]].show()
             characterIdx += 1
 
 ###
 ### Game Scene
 ###
-gameScene = Scene('game', Directory.BACKGROUND.value + 'castle.png')
+gameScene = Scene('game', config.Directory.BACKGROUND.value + 'castle.png')
 
-item_eye = Object(Directory.ITEM.value + 'eye.png')
+item_eye = Object(config.Directory.ITEM.value + 'eye.png')
 item_eye.locate(gameScene, 5, 600)
 item_eye.setScale(0.8)
 
 def item_eye_onMouseAction(x, y, action):
-    global SuccessiveWrongCount, NowState
-    SuccessiveWrongCount = 0
-    NowState = State.CANNOTCLICK
+    #global SuccessiveWrongCount, NowState
+    config.SuccessiveWrongCount = 0
+    config.NowState = config.State.CANNOTCLICK
 
     item_eye.hide()
-    for i in range(CardRow[NowStage]):
-        for j in range(CardCol[NowStage]):
-            if not Cards[i][j].isHide:
-                Cards[i][j].setImage(Cards[i][j].image)
+    for i in range(config.CardRow[config.NowStage]):
+        for j in range(config.CardCol[config.NowStage]):
+            if not config.Cards[i][j].isHide:
+                config.Cards[i][j].setImage(config.Cards[i][j].image)
     item_eye_timer.set(2)
     item_eye_timer.start()
 item_eye.onMouseAction = item_eye_onMouseAction
 
 item_eye_timer = Timer(2)
 def item_eye_timer_onTimeout():
-    global NowState
-    NowState = State.NOCLICK
-    for i in range(CardRow[NowStage]):
-        for j in range(CardCol[NowStage]):
-            if not Cards[i][j].isHide:
-                Cards[i][j].setImage(Directory.CARD.value + 'card.png')
+    #global NowState
+    config.NowState = config.State.NOCLICK
+    for i in range(config.CardRow[config.NowStage]):
+        for j in range(config.CardCol[config.NowStage]):
+            if not config.Cards[i][j].isHide:
+                config.Cards[i][j].setImage(config.Directory.CARD.value + 'card.png')
 item_eye_timer.onTimeout = item_eye_timer_onTimeout
 
 
 ###
 ### end Scene
 ###
-endScene = Scene('end', Directory.BACKGROUND.value + 'castle.png')
+endScene = Scene('end', config.Directory.BACKGROUND.value + 'castle.png')
 def endScene_onEnter():
-    global Cards, StartTime
+    #global Cards, StartTime
 
-    for i in range(CardRow[NowStage]):
-        for j in range(CardCol[NowStage]):
-            Cards[i][j].hide()
+    for i in range(config.CardRow[config.NowStage]):
+        for j in range(config.CardCol[config.NowStage]):
+            config.Cards[i][j].hide()
     
-
 endScene.onEnter = endScene_onEnter
 
 
-restartButton = Object(Directory.BUTTON.value + 'restart_button.png')
+restartButton = Object(config.Directory.BUTTON.value + 'restart_button.png')
 restartButton.locate(endScene, 280, 200)
 restartButton.setScale(0.5)
 restartButton.show()
@@ -437,7 +362,7 @@ def restartButton_onMouseAction(x, y, action):
     curtainTimer.start()
 restartButton.onMouseAction = restartButton_onMouseAction
 
-exitButton = Object(Directory.BUTTON.value + 'exit_button.png')
+exitButton = Object(config.Directory.BUTTON.value + 'exit_button.png')
 exitButton.locate(endScene, 763, 200)
 exitButton.setScale(0.5)
 exitButton.show()
