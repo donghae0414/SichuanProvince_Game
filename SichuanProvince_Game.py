@@ -23,7 +23,6 @@ class StageButton(Object):
         self.stage = s
 
     def onMouseAction(self, x, y, action):
-        #global config.NowStage, config.NowState, config.SuccessiveWrongCount, config.SuccessiveRightCount, config.CorrectNum, config.StartTime
         config.SuccessiveWrongCount = 0
         config.SuccessiveRightCount = 0
         config.CorrectNum = 0
@@ -92,7 +91,6 @@ class Card(Object):
 # Timers
 answerShowTimer = Timer(config.AnswerShowTime)
 def answerShowTimer_onTimeout():
-    #global Cards
     for i in range(config.CardRow[config.NowStage]):
         for j in range(config.CardCol[config.NowStage]):
             config.Cards[i][j].setImage(config.CardBackImage)
@@ -104,8 +102,6 @@ answerShowTimer.onTimeout = answerShowTimer_onTimeout
 
 rightTimer = Timer(0.5)
 def rightTimer_onTimeOut():
-    #global Cards, NowState, CorrectNum, SuccessiveWrongCount, SuccessiveRightCount, StartTime
-
     config.SuccessiveRightCount += 1
     config.SuccessiveWrongCount = 0
     if config.SuccessiveRightCount == config.SuccessiveRightNum:
@@ -132,7 +128,6 @@ def rightTimer_onTimeOut():
 rightTimer.onTimeout = rightTimer_onTimeOut
 
 def compare_record(completeTime):
-    #global record
     msg = ""
     if config.NowStage == config.Stage.EASY:
         if config.record[0] > completeTime:
@@ -164,7 +159,6 @@ def compare_record(completeTime):
 
 wrongTimer = Timer(0.5)
 def wrongTimer_onTimeout():
-    #global Cards, NowState, SuccessiveWrongCount, SuccessiveRightCount
     
     config.SuccessiveRightCount = 0
     config.SuccessiveWrongCount += 1
@@ -202,7 +196,6 @@ endSceneTimer.onTimeout = endSceneTimer_onTimeout
 startScene = Scene('main', config.Directory.BACKGROUND.value + 'castle.png')
 
 def initClickedVars():
-    #global FirstClickedRow, FirstClickedCol, SecondClickedRow, SecondClickedCol
     config.FirstClickedRow, config.FirstClickedCol, config.SecondClickedRow, config.SecondClickedCol = None, None, None, None
 
 startButton = Object(config.Directory.BUTTON.value + 'start_button.png')
@@ -263,8 +256,6 @@ for i in range(len(config.StageButtons)):
     config.StageButtons[i].show()
 
 def createCards():
-    #global Cards
-
     # select Characters
     characterNum = int(config.CardRow[config.NowStage] * config.CardCol[config.NowStage] / 2)
     random.shuffle(config.CharacterList)
@@ -275,7 +266,6 @@ def createCards():
 
     # shuffle map
     config.Cards = []
-
     map = []
     for i in range(config.CardRow[config.NowStage]):
         arr = []
@@ -315,7 +305,6 @@ item_eye.locate(gameScene, 5, 600)
 item_eye.setScale(0.8)
 
 def item_eye_onMouseAction(x, y, action):
-    #global SuccessiveWrongCount, NowState
     config.SuccessiveWrongCount = 0
     config.NowState = config.State.CANNOTCLICK
 
@@ -330,7 +319,6 @@ item_eye.onMouseAction = item_eye_onMouseAction
 
 item_eye_timer = Timer(2)
 def item_eye_timer_onTimeout():
-    #global NowState
     config.NowState = config.State.NOCLICK
     for i in range(config.CardRow[config.NowStage]):
         for j in range(config.CardCol[config.NowStage]):
@@ -344,8 +332,6 @@ item_eye_timer.onTimeout = item_eye_timer_onTimeout
 ###
 endScene = Scene('end', config.Directory.BACKGROUND.value + 'castle.png')
 def endScene_onEnter():
-    #global Cards, StartTime
-
     for i in range(config.CardRow[config.NowStage]):
         for j in range(config.CardCol[config.NowStage]):
             config.Cards[i][j].hide()
